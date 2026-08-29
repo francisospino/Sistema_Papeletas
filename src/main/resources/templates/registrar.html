@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Registrar papeleta de salida</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+<body>
+    <div th:replace="~{fragments :: cabecera}"></div>
+
+    <main>
+        <div th:if="${error}" class="mensaje-error" th:text="${error}"></div>
+        <div th:if="${#fields.hasErrors('${formulario}')}" class="mensaje-error">
+            Revisa los campos marcados, hay datos obligatorios sin completar.
+        </div>
+
+        <form class="tarjeta" method="post" th:action="@{/papeletas}" th:object="${formulario}">
+            <div class="seccion-titulo">
+                <span class="seccion-numero">1</span>
+                <div>
+                    <h2>Datos de la papeleta</h2>
+                    <p class="seccion-ayuda">El n&uacute;mero de papeleta se asigna autom&aacute;ticamente al guardar.</p>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="campo">
+                    <label for="tipoSalida">Tipo de salida</label>
+                    <select id="tipoSalida" th:field="*{tipoSalida}">
+                        <option value="">Selecciona...</option>
+                        <option th:each="t : ${tiposSalida}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="otrosDescripcion">Detalle (si el tipo es "Otros")</label>
+                    <input type="text" id="otrosDescripcion" th:field="*{otrosDescripcion}" placeholder="Ej. Equipo">
+                </div>
+                <div class="campo">
+                    <label for="fechaSalida">Fecha de salida</label>
+                    <input type="date" id="fechaSalida" th:field="*{fechaSalida}" onchange="actualizarCampoRetornoEstimada()">
+                </div>
+                <div class="campo">
+                    <label for="areaQueAutoriza">&Aacute;rea que autoriza</label>
+                    <input type="text" id="areaQueAutoriza" th:field="*{areaQueAutoriza}" placeholder="Ej. Soporte Tecnol&oacute;gico">
+                </div>
+                <div class="campo">
+                    <label for="autorizadoPor">Autorizado por</label>
+                    <input type="text" id="autorizadoPor" th:field="*{autorizadoPor}">
+                </div>
+                <div class="campo">
+                    <label for="destinoBien">Destino del bien</label>
+                    <input type="text" id="destinoBien" th:field="*{destinoBien}" placeholder="Ej. Campus Cusco">
+                </div>
+                <div class="campo">
+                    <label for="responsableSolicitante">Responsable / solicitante</label>
+                    <input type="text" id="responsableSolicitante" th:field="*{responsableSolicitante}">
+                </div>
+                <div class="campo">
+                    <label for="trasladoTipo">Traslado</label>
+                    <select id="trasladoTipo" th:field="*{trasladoTipo}" onchange="actualizarCampoRetornoEstimada()">
+                        <option value="">Selecciona...</option>
+                        <option th:each="t : ${tiposTraslado}" th:value="${t}" th:text="${t}"></option>
+                    </select>
+                </div>
+                <div class="campo">
+                    <label for="fechaRetornoEstimada">Fecha de retorno estimada (opcional)</label>
+                    <input type="date" id="fechaRetornoEstimada" th:field="*{fechaRetornoEstimada}">
+                    <span class="seccion-ayuda" id="ayudaRetornoEstimada">Solo aplica si el traslado es temporal.</span>
+                </div>
+                <div class="campo ancho-completo">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea id="observaciones" th:field="*{observaciones}" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="seccion-titulo seccion-titulo-bienes">
+                <span class="seccion-numero">2</span>
+                <div>
+                    <h2>Bienes</h2>
+                    <p class="seccion-ayuda">Completa al menos una fila; la descripci&oacute;n es lo m&iacute;nimo requerido.</p>
+                </div>
+            </div>
+            <div class="grupo-items">
+                <span class="encabezado">Cantidad</span>
+                <span class="encabezado">Unidad</span>
+                <span class="encabezado">Descripci&oacute;n</span>
+                <span class="encabezado">Marca</span>
+                <span class="encabezado">Modelo</span>
+                <span class="encabezado">Serie</span>
+                <span class="encabezado">Estado</span>
+                <span class="encabezado">Observaciones</span>
+            </div>
+            <div id="filasBienes">
+                <div class="grupo-items fila-bien fila-bien-fija" th:each="item, iter : *{items}">
+                    <input type="number" min="1" th:field="*{items[__${iter.index}__].cantidad}">
+                    <input type="text" th:field="*{items[__${iter.index}__].unidadMedida}" placeholder="UND">
+                    <input type="text" th:field="*{items[__${iter.index}__].descripcion}">
+                    <input type="text" th:field="*{items[__${iter.index}__].marca}">
+                    <input type="text" th:field="*{items[__${iter.index}__].modelo}">
+                    <input type="text" th:field="*{items[__${iter.index}__].serie}">
+                    <select th:field="*{items[__${iter.index}__].estado}">
+                        <option value="">-</option>
+                        <option th:each="e : ${estadosBien}" th:value="${e}" th:text="${e}"></option>
+                    </select>
+                    <input type="text" th:field="*{items[__${iter.index}__].observaciones}">
+                    <button type="button" class="quitar-fila-bien" onclick="quitarFilaBien(this)" title="Quitar fila">
+                        <svg class="icono" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="secundario" id="botonAgregarBien" onclick="agregarFilaBien()">
+                <svg class="icono" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Agregar otro bien
+            </button>
+            <p class="ayuda-filas-vacias">Las filas vac&iacute;as se ignoran autom&aacute;ticamente.</p>
+
+            <div style="margin-top:16px;">
+                <button type="submit">
+                    <svg class="icono" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                    Registrar papeleta
+                </button>
+                <a class="boton secundario" th:href="@{/papeletas}">Cancelar</a>
+            </div>
+        </form>
+    </main>
+
+    <div th:replace="~{fragments :: pie}"></div>
+
+    <script>
+        function actualizarCampoRetornoEstimada() {
+            const traslado = document.getElementById('trasladoTipo').value;
+            const campo = document.getElementById('fechaRetornoEstimada');
+            const ayuda = document.getElementById('ayudaRetornoEstimada');
+            const fechaSalida = document.getElementById('fechaSalida').value;
+
+            if (traslado === 'DEFINITIVO') {
+                campo.value = '';
+                campo.disabled = true;
+                ayuda.textContent = 'No aplica: el traslado es definitivo, el bien no retorna.';
+            } else {
+                campo.disabled = false;
+                ayuda.textContent = 'Solo aplica si el traslado es temporal. Puedes dejarlo en blanco si aún no lo sabes.';
+            }
+            campo.min = fechaSalida || '';
+        }
+
+        let indiceSiguienteBien = document.querySelectorAll('#filasBienes .fila-bien').length;
+
+        function agregarFilaBien() {
+            const contenedor = document.getElementById('filasBienes');
+            const filas = contenedor.querySelectorAll('.fila-bien');
+            const nuevaFila = filas[filas.length - 1].cloneNode(true);
+
+            nuevaFila.classList.remove('fila-bien-fija');
+            nuevaFila.querySelectorAll('input').forEach(campo => { campo.value = ''; });
+            nuevaFila.querySelectorAll('select').forEach(campo => { campo.value = ''; });
+            nuevaFila.querySelectorAll('[name]').forEach(campo => {
+                campo.setAttribute('name', campo.getAttribute('name').replace(/items\[\d+\]/, 'items[' + indiceSiguienteBien + ']'));
+                campo.removeAttribute('id');
+            });
+
+            contenedor.appendChild(nuevaFila);
+            indiceSiguienteBien++;
+            nuevaFila.querySelector('input').focus();
+        }
+
+        function quitarFilaBien(boton) {
+            const fila = boton.closest('.fila-bien');
+            if (fila && !fila.classList.contains('fila-bien-fija')) {
+                fila.remove();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', actualizarCampoRetornoEstimada);
+    </script>
+</body>
+</html>

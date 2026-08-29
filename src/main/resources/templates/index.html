@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Papeletas de salida - Listado</title>
+    <link rel="icon" type="image/svg+xml" th:href="@{/img/favicon.svg}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+</head>
+<body>
+    <div th:replace="~{fragments :: cabecera}"></div>
+
+    <main>
+        <div th:if="${mensaje}" class="mensaje-ok" th:text="${mensaje}"></div>
+
+        <div class="fila-estadisticas" id="filaEstadisticas">
+            <div class="estadistica">
+                <span class="estadistica-valor" id="statTotal">&ndash;</span>
+                <span class="estadistica-etiqueta">Total registradas</span>
+            </div>
+            <div class="estadistica estadistica-activa">
+                <span class="estadistica-valor" id="statActivas">&ndash;</span>
+                <span class="estadistica-etiqueta">Activas</span>
+            </div>
+            <div class="estadistica estadistica-pendiente">
+                <span class="estadistica-valor" id="statPendientes">&ndash;</span>
+                <span class="estadistica-etiqueta">Pendientes de retorno</span>
+            </div>
+            <div class="estadistica estadistica-retornada">
+                <span class="estadistica-valor" id="statRetornadas">&ndash;</span>
+                <span class="estadistica-etiqueta">Retornadas</span>
+            </div>
+        </div>
+
+        <div class="tarjeta">
+            <form class="filtros" method="get" th:action="@{/papeletas}" id="formFiltros">
+                <div class="campo">
+                    <label for="numero">N&deg; papeleta</label>
+                    <input type="text" id="numero" name="numero" th:value="${numero}">
+                </div>
+                <div class="campo">
+                    <label for="responsable">Responsable</label>
+                    <input type="text" id="responsable" name="responsable" th:value="${responsable}">
+                </div>
+                <div class="campo">
+                    <label for="destino">Destino</label>
+                    <input type="text" id="destino" name="destino" th:value="${destino}">
+                </div>
+                <div class="campo">
+                    <label for="estado">Estado</label>
+                    <select id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <option th:each="e : ${estados}" th:value="${e}" th:text="${e}"
+                                th:selected="${e.toString() == estado}"></option>
+                    </select>
+                </div>
+                <button type="submit">
+                    <svg class="icono" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+                    Filtrar
+                </button>
+                <a class="boton secundario" th:href="@{/papeletas}">Limpiar</a>
+            </form>
+        </div>
+
+        <div class="tarjeta" id="tarjetaListado">
+            <div class="barra-acciones-listado">
+                <strong>Papeletas registradas</strong>
+                <div class="acciones-listado">
+                    <a class="boton secundario" id="botonExportar" th:href="@{/papeletas/exportar}">
+                        <svg class="icono" viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                        Exportar a Excel
+                    </a>
+                    <button type="button" class="secundario" onclick="window.print()">
+                        <svg class="icono" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z"/></svg>
+                        Imprimir
+                    </button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>N&deg;</th>
+                            <th>Tipo</th>
+                            <th>Fecha salida</th>
+                            <th>Destino</th>
+                            <th>Responsable</th>
+                            <th>Traslado</th>
+                            <th>Bienes</th>
+                            <th>Estado</th>
+                            <th class="col-accion">Acci&oacute;n</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        <tr>
+                            <td colspan="9">Cargando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-fondo" id="modalRetorno">
+        <div class="modal-caja">
+            <h3>Registrar retorno</h3>
+            <p id="modalRetornoPapeleta" class="seccion-ayuda"></p>
+            <div class="campo">
+                <label for="modalFechaRetorno">Fecha de retorno</label>
+                <input type="date" id="modalFechaRetorno">
+            </div>
+            <div class="modal-acciones">
+                <button type="button" class="secundario" onclick="cerrarModalRetorno()">Cancelar</button>
+                <button type="button" onclick="confirmarRetorno()">
+                    <svg class="icono" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments :: pie}"></div>
+
+    <script>
+        const intervaloRefrescoMs = 5000;
+
+        function escaparHtml(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto ?? '';
+            return div.innerHTML;
+        }
+
+        function valoresFiltro() {
+            const form = document.getElementById('formFiltros');
+            const datos = new FormData(form);
+            const params = new URLSearchParams();
+            for (const [clave, valor] of datos.entries()) {
+                if (valor) params.append(clave, valor);
+            }
+            return params.toString();
+        }
+
+        function actualizarEnlaceExportar(query) {
+            const boton = document.getElementById('botonExportar');
+            boton.href = '/papeletas/exportar' + (query ? ('?' + query) : '');
+        }
+
+        function celdaEstado(estado) {
+            return '<span class="estado-pill estado-' + estado + '">' + estado + '</span>';
+        }
+
+        function accionFila(p) {
+            if (p.estado === 'ACTIVA' && p.trasladoTipo === 'TEMPORAL') {
+                const numero = escaparHtml(p.numero);
+                const fechaSalida = escaparHtml(p.fechaSalida);
+                const fechaEstimada = escaparHtml(p.fechaRetornoEstimada);
+                return '<button type="button" class="secundario" '
+                    + 'onclick="abrirModalRetorno(' + p.id + ', \'' + numero + '\', \'' + fechaSalida + '\', \'' + fechaEstimada + '\')">'
+                    + '<svg class="icono" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-1"/></svg>'
+                    + 'Registrar retorno</button>';
+            }
+            return '-';
+        }
+
+        let papeletaIdRetorno = null;
+
+        function abrirModalRetorno(id, numero, fechaSalida, fechaEstimada) {
+            papeletaIdRetorno = id;
+            document.getElementById('modalRetornoPapeleta').textContent = 'Papeleta N° ' + numero;
+            const campoFecha = document.getElementById('modalFechaRetorno');
+            campoFecha.min = fechaSalida || '';
+            campoFecha.max = new Date().toISOString().slice(0, 10);
+            // Solo usa la fecha estimada si ya llegó (no se puede confirmar un retorno futuro).
+            campoFecha.value = (fechaEstimada && fechaEstimada <= campoFecha.max) ? fechaEstimada : campoFecha.max;
+            document.getElementById('modalRetorno').classList.add('modal-visible');
+        }
+
+        function cerrarModalRetorno() {
+            document.getElementById('modalRetorno').classList.remove('modal-visible');
+            papeletaIdRetorno = null;
+        }
+
+        function confirmarRetorno() {
+            if (!papeletaIdRetorno) return;
+            const fecha = document.getElementById('modalFechaRetorno').value;
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = '/papeletas/' + papeletaIdRetorno + '/retorno';
+            const campo = document.createElement('input');
+            campo.type = 'hidden';
+            campo.name = 'fechaRetorno';
+            campo.value = fecha;
+            form.appendChild(campo);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        async function cargarEstadisticas() {
+            try {
+                const respuesta = await fetch('/api/papeletas/resumen');
+                const stats = await respuesta.json();
+                document.getElementById('statTotal').textContent = stats.total;
+                document.getElementById('statActivas').textContent = stats.activas;
+                document.getElementById('statPendientes').textContent = stats.pendientesRetorno;
+                document.getElementById('statRetornadas').textContent = stats.retornadas;
+            } catch (err) {
+                console.error('No se pudieron cargar las estadisticas', err);
+            }
+        }
+
+        async function cargarPapeletas() {
+            try {
+                const query = valoresFiltro();
+                actualizarEnlaceExportar(query);
+                const respuesta = await fetch('/api/papeletas' + (query ? ('?' + query) : ''));
+                const papeletas = await respuesta.json();
+                const cuerpo = document.getElementById('cuerpoTabla');
+
+                if (papeletas.length === 0) {
+                    cuerpo.innerHTML = '<tr><td colspan="9" class="fila-vacia">'
+                        + '<svg class="icono-vacio" viewBox="0 0 24 24"><path d="M4 7h16M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-9 4v7m5-7v7M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/></svg>'
+                        + '<span>No hay papeletas registradas con ese filtro.</span></td></tr>';
+                } else {
+                    cuerpo.innerHTML = papeletas.map(p => `
+                        <tr>
+                            <td>${escaparHtml(p.numero)}</td>
+                            <td>${escaparHtml(p.tipoSalida)}</td>
+                            <td>${escaparHtml(p.fechaSalida)}</td>
+                            <td>${escaparHtml(p.destinoBien)}</td>
+                            <td>${escaparHtml(p.responsableSolicitante)}</td>
+                            <td>${escaparHtml(p.trasladoTipo)}</td>
+                            <td class="col-bienes">${escaparHtml(p.bienesResumen)}</td>
+                            <td>${celdaEstado(p.estado)}</td>
+                            <td>${accionFila(p)}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('No se pudo actualizar el listado de papeletas', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarPapeletas();
+            cargarEstadisticas();
+            document.getElementById('formFiltros').addEventListener('submit', (ev) => {
+                ev.preventDefault();
+                cargarPapeletas();
+            });
+            setInterval(cargarPapeletas, intervaloRefrescoMs);
+            setInterval(cargarEstadisticas, intervaloRefrescoMs);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="cabecera">
+        <div class="app-barra-marca"></div>
+        <header class="app-header">
+            <a class="app-marca" th:href="@{/papeletas}">
+                <svg class="app-logo" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3"/><path d="M8 12h8M8 16h5"/></svg>
+                <span class="app-titulo">
+                    Sistema de Papeletas
+                    <small>Salida de Bienes</small>
+                </span>
+            </a>
+            <nav class="app-nav">
+                <a th:href="@{/papeletas}">Listado</a>
+                <a th:href="@{/papeletas/nueva}">Registrar papeleta</a>
+                <a th:href="@{/papeletas/reportes}">Reportes</a>
+                <a th:href="@{/configuracion}">Configuraci&oacute;n</a>
+            </nav>
+        </header>
+    </div>
+
+    <div th:fragment="pie">
+        <footer class="app-footer">
+            <span>&copy; <span th:text="${#temporals.year(#temporals.createNow())}"></span> Sistema de Papeletas de Salida de Bienes</span>
+        </footer>
+    </div>
+</body>
+</html>
