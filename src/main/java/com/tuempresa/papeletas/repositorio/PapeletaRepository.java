@@ -13,7 +13,7 @@ public interface PapeletaRepository extends JpaRepository<Papeleta, Long> {
 
     Optional<Papeleta> findTopByOrderByNumeroDesc();
 
-    List<Papeleta> findByEstadoOrderByFechaRegistroDesc(EstadoPapeleta estado);
+    List<Papeleta> findByEstadoAndTrasladoTipoOrderByFechaRegistroDesc(EstadoPapeleta estado, TipoTraslado trasladoTipo);
 
     List<Papeleta> findAllByOrderByFechaRegistroDesc();
 

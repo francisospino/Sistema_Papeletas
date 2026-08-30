@@ -14,6 +14,7 @@
 
     <main>
         <div th:if="${mensaje}" class="mensaje-ok" th:text="${mensaje}"></div>
+        <div th:if="${error}" class="mensaje-error" th:text="${error}"></div>
 
         <div class="fila-estadisticas" id="filaEstadisticas">
             <div class="estadistica">
@@ -126,10 +127,17 @@
     <script>
         const intervaloRefrescoMs = 5000;
 
+        // Escapa tanto para texto como para valores de atributo. Los datos ya no se
+        // inyectan dentro de ningun onclick: el boton de retorno viaja en atributos
+        // data-* y se atiende por delegacion, asi el navegador nunca vuelve a
+        // interpretar el valor escapado como codigo.
         function escaparHtml(texto) {
-            const div = document.createElement('div');
-            div.textContent = texto ?? '';
-            return div.innerHTML;
+            return String(texto ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function valoresFiltro() {
@@ -148,16 +156,17 @@
         }
 
         function celdaEstado(estado) {
-            return '<span class="estado-pill estado-' + estado + '">' + estado + '</span>';
+            const valor = escaparHtml(estado);
+            return '<span class="estado-pill estado-' + valor + '">' + valor + '</span>';
         }
 
         function accionFila(p) {
             if (p.estado === 'ACTIVA' && p.trasladoTipo === 'TEMPORAL') {
-                const numero = escaparHtml(p.numero);
-                const fechaSalida = escaparHtml(p.fechaSalida);
-                const fechaEstimada = escaparHtml(p.fechaRetornoEstimada);
-                return '<button type="button" class="secundario" '
-                    + 'onclick="abrirModalRetorno(' + p.id + ', \'' + numero + '\', \'' + fechaSalida + '\', \'' + fechaEstimada + '\')">'
+                return '<button type="button" class="secundario boton-retorno"'
+                    + ' data-id="' + escaparHtml(p.id) + '"'
+                    + ' data-numero="' + escaparHtml(p.numero) + '"'
+                    + ' data-fecha-salida="' + escaparHtml(p.fechaSalida) + '"'
+                    + ' data-fecha-estimada="' + escaparHtml(p.fechaRetornoEstimada) + '">'
                     + '<svg class="icono" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-1"/></svg>'
                     + 'Registrar retorno</button>';
             }
@@ -248,6 +257,13 @@
             document.getElementById('formFiltros').addEventListener('submit', (ev) => {
                 ev.preventDefault();
                 cargarPapeletas();
+            });
+            // Delegacion: los botones de la tabla se recrean en cada refresco.
+            document.getElementById('cuerpoTabla').addEventListener('click', (ev) => {
+                const boton = ev.target.closest('.boton-retorno');
+                if (!boton) return;
+                abrirModalRetorno(boton.dataset.id, boton.dataset.numero,
+                    boton.dataset.fechaSalida, boton.dataset.fechaEstimada);
             });
             setInterval(cargarPapeletas, intervaloRefrescoMs);
             setInterval(cargarEstadisticas, intervaloRefrescoMs);

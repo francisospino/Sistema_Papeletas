@@ -27,10 +27,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:if="${#lists.isEmpty(activas)}">
+                    <tr th:if="${#lists.isEmpty(pendientesRetorno)}">
                         <td colspan="6">No hay bienes pendientes de retorno.</td>
                     </tr>
-                    <tr th:each="p : ${activas}" th:if="${p.trasladoTipo.toString() == 'TEMPORAL'}">
+                    <tr th:each="p : ${pendientesRetorno}">
                         <td th:text="${p.numero}"></td>
                         <td th:text="${p.destinoBien}"></td>
                         <td th:text="${p.responsableSolicitante}"></td>

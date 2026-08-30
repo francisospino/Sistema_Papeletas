@@ -13,7 +13,8 @@ import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.time.format.DateTimeParseException;
+import java.util.NoSuchElementException;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -47,9 +48,8 @@ public class PapeletaViewController {
                            @RequestParam(required = false) String destino,
                            @RequestParam(required = false) String estado,
                            Model model) {
-        List<Papeleta> papeletas = obtenerPapeletasFiltradas(numero, responsable, destino, estado);
-
-        model.addAttribute("papeletas", papeletas);
+        // La tabla se pinta y autorefresca desde /api/papeletas, asi que aqui solo se
+        // devuelven los valores necesarios para repintar los filtros.
         model.addAttribute("numero", numero);
         model.addAttribute("responsable", responsable);
         model.addAttribute("destino", destino);
@@ -65,7 +65,7 @@ public class PapeletaViewController {
                                             @RequestParam(required = false) String estado) {
         byte[] archivo;
         try {
-            archivo = papeletaService.exportarExcel(numero, responsable, destino, parseEstado(estado));
+            archivo = papeletaService.exportarExcel(numero, responsable, destino, EstadoPapeleta.desde(estado));
         } catch (IOException e) {
             throw new UncheckedIOException("No se pudo generar el archivo Excel", e);
         }
@@ -114,10 +114,21 @@ public class PapeletaViewController {
     public String registrarRetorno(@PathVariable Long id,
                                     @RequestParam(required = false) String fechaRetorno,
                                     RedirectAttributes redirectAttributes) {
-        LocalDate fecha = tieneTexto(fechaRetorno) ? LocalDate.parse(fechaRetorno) : LocalDate.now();
-        Papeleta actualizada = papeletaService.registrarRetorno(id, fecha);
-        redirectAttributes.addFlashAttribute("mensaje",
-                "Retorno registrado para la papeleta N° " + actualizada.getNumero() + ".");
+        LocalDate fecha;
+        try {
+            fecha = tieneTexto(fechaRetorno) ? LocalDate.parse(fechaRetorno) : LocalDate.now();
+        } catch (DateTimeParseException e) {
+            redirectAttributes.addFlashAttribute("error", "La fecha de retorno no tiene un formato valido");
+            return "redirect:/papeletas";
+        }
+
+        try {
+            Papeleta actualizada = papeletaService.registrarRetorno(id, fecha);
+            redirectAttributes.addFlashAttribute("mensaje",
+                    "Retorno registrado para la papeleta N° " + actualizada.getNumero() + ".");
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
         return "redirect:/papeletas";
     }
 
@@ -125,7 +136,7 @@ public class PapeletaViewController {
     public String reportes(Model model) {
         model.addAttribute("porDestino", papeletaService.reportePorDestino());
         model.addAttribute("porArea", papeletaService.reportePorArea());
-        model.addAttribute("activas", papeletaService.listarActivas());
+        model.addAttribute("pendientesRetorno", papeletaService.listarPendientesRetorno());
         return "reportes";
     }
 
@@ -133,22 +144,6 @@ public class PapeletaViewController {
         model.addAttribute("tiposSalida", TipoSalida.values());
         model.addAttribute("tiposTraslado", TipoTraslado.values());
         model.addAttribute("estadosBien", EstadoBien.values());
-    }
-
-    private List<Papeleta> obtenerPapeletasFiltradas(String numero, String responsable, String destino, String estado) {
-        EstadoPapeleta estadoFiltro = parseEstado(estado);
-        boolean hayFiltro = tieneTexto(numero) || tieneTexto(responsable) || tieneTexto(destino) || estadoFiltro != null;
-
-        return hayFiltro
-                ? papeletaService.buscar(numero, responsable, destino, estadoFiltro)
-                : papeletaService.listarTodas();
-    }
-
-    private EstadoPapeleta parseEstado(String estado) {
-        if (!tieneTexto(estado)) {
-            return null;
-        }
-        return EstadoPapeleta.valueOf(estado);
     }
 
     private boolean tieneTexto(String valor) {

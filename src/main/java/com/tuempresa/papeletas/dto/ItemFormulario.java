@@ -13,8 +13,24 @@ public class ItemFormulario {
     private EstadoBien estado;
     private String observaciones;
 
+    /**
+     * Una fila solo se descarta si el usuario no escribio absolutamente nada en ella.
+     * Si toco algun campo se valida en PapeletaService para avisarle de lo que falta,
+     * en vez de dejar que reviente contra las columnas NOT NULL de papeleta_item.
+     */
     public boolean estaVacio() {
-        return descripcion == null || descripcion.isBlank();
+        return cantidad == null
+                && estado == null
+                && esBlanco(unidadMedida)
+                && esBlanco(descripcion)
+                && esBlanco(marca)
+                && esBlanco(modelo)
+                && esBlanco(serie)
+                && esBlanco(observaciones);
+    }
+
+    private static boolean esBlanco(String valor) {
+        return valor == null || valor.isBlank();
     }
 
     public Integer getCantidad() {

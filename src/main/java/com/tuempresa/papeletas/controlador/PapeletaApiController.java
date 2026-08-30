@@ -25,7 +25,7 @@ public class PapeletaApiController {
                                          @RequestParam(required = false) String responsable,
                                          @RequestParam(required = false) String destino,
                                          @RequestParam(required = false) String estado) {
-        EstadoPapeleta estadoFiltro = (estado == null || estado.isBlank()) ? null : EstadoPapeleta.valueOf(estado);
+        EstadoPapeleta estadoFiltro = EstadoPapeleta.desde(estado);
         boolean hayFiltro = tieneTexto(numero) || tieneTexto(responsable) || tieneTexto(destino) || estadoFiltro != null;
 
         return hayFiltro
