@@ -1,7 +1,7 @@
 :root {
     --azul: #1d4e89;
     --azul-oscuro: #123a66;
-    --morado-suave: #eaf0f8;
+    --azul-suave: #eaf0f8;
     --gris-borde: #dfe3e8;
     --gris-fondo: #f5f7fa;
     --verde: #1e8e3e;
@@ -246,7 +246,7 @@ th, td {
 }
 
 th {
-    background: var(--morado-suave);
+    background: var(--azul-suave);
     color: var(--azul-oscuro);
     font-weight: 600;
 }
@@ -403,7 +403,7 @@ th {
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: var(--morado-suave);
+    background: var(--azul-suave);
     color: var(--azul);
     font-weight: 700;
     font-size: 0.85rem;
