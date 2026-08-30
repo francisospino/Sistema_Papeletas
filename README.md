@@ -183,3 +183,7 @@ arranca solo sin que nadie tenga que hacer nada.
 - Si el correo falla (credenciales mal puestas, sin internet, etc.) el registro de la
   papeleta **no se revierte** — solo queda un log de error — para que un problema de correo
   nunca bloquee el registro del bien.
+
+## Licencia
+
+Distribuido bajo la licencia MIT. Ver [LICENSE](LICENSE) para el texto completo.
